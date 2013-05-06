@@ -4,7 +4,7 @@ Plugin Name: Monthly Timeline
 Plugin URI: http://ctlt.ubc.ca
 Description: Lets you display you posts every month in a timeline fashion
 Author: Enej UBC CTLT
-Version: 0.1
+Version: 0.3
 */
 
 
@@ -17,6 +17,11 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	extract( shortcode_atts(
 		array(
 			'query' => '',
+			'taxonomy'   => '',
+			'taxonomy_is'=> '',
+			'filter_1'   => '',		
+			'filter_2'   => '',			
+			'filter_3'   => '',
 		), $atts )
 	);
 
@@ -31,31 +36,30 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	
 		<label>Filter By</label>
 		
+		<?php if( $filter_1 ): ?>
 		<div class="btn-group">
-			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle">Commitment<span class="caret"></span></button>
+			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle"><?php echo $filter_1; ?> <span class="caret"></span></button>
 			<ul class="dropdown-menu">
-				<li ><a alt="bubble-1" id="aboriginal-engagement" href="/strategicplan/the-plan/aboriginal-engagement" >Aboriginal Engagement</a></li>
-				<li><a id="alumni-engagement" href="/strategicplan/the-plan/alumni-engagement" alt="bubble-2">Alumni Engagement</a></li>
-				<li><a id="intercultural-understanding" href="/strategicplan/the-plan/intercultural-understanding" alt="bubble-3">Intercultural Understanding</a></li>
-				<li><a id="research-excellence"  class="main-commitment" href="/strategicplan/the-plan/research-excellence" alt="bubble-5">Research Excellence</a></li>
-				<li><a id="student-learning" class="main-commitment" href="/strategicplan/the-plan/student-learning" alt="bubble-4">Student Learning</a></li>
-				<li><a id="community-engagement"  class="main-commitment" href="/strategicplan/the-plan/community-engagement" alt="bubble-6">Community Engagement</a></li>
-				<li><a id="international-engagement" href="/strategicplan/the-plan/international-engagement" alt="bubble-7">International Engagement</a></li>
-				<li><a id="outstanding-work-environment" href="/strategicplan/the-plan/outstanding-work-environment" alt="bubble-8">Outstanding Work Environment</a></li>
-				<li><a id="sustainability" href="/strategicplan/the-plan/sustainability" alt="bubble-9">Sustainability</a></li>
+				
+			  <li><a href="#<?php echo $filter_1;?>-all">All</a></li>
+			  <?php monthly_timeline_filter( $filter_1 ); ?>
 			</ul>
 		</div>
+		<?php endif; ?>
+		<?php if( $filter_2 ): ?>
 		<div class="btn-group">
-			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle">Campus <span class="caret"></span></button>
+			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle"><?php echo $filter_2; ?> <span class="caret"></span></button>
 			<ul class="dropdown-menu">
-			  <li><a href="#all">All</a></li>
-			  <li><a href="#vancouver">Vancouver</a></li>
-			  <li><a href="#okanagan">Okanagan</a></li>
+				
+			  <li><a href="#<?php echo $filter_2;?>-all">All</a></li>
+			  <?php monthly_timeline_filter( $filter_2 ); ?>
 			</ul>
 		</div>
+		<?php endif; ?>
 		<div class="btn-group">
 			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle">Unit <span class="caret"></span></button>
 			<ul class="dropdown-menu">
+				
 				<li><a href="#all">All</a></li>
 				<li><a href="#applied_science" >Faculty of Applied Science</a></li>
 				<li><a href="#arts" >Faculty of Arts</a></li>
@@ -74,8 +78,24 @@ function monthly_timeline_shortcode_handler( $atts ) {
 		<a href="/" class="button action"><span class="arrow-left"></span>Story View</a>
 	</div>
 	<?php 
-	$query = $query.'posts_per_page=-1&orderby=date&order=DESC';
+	if(!empty($query) ):
+		$query = $query.'&posts_per_page=-1&orderby=date&order=DESC';
+	else:
+		$query = $query.'&posts_per_page=-1&orderby=date&order=DESC';
+	endif;
 	
+	$query = wp_parse_args( $query );
+	
+	if( !empty($taxonomy) && !empty($taxonomy_is)):
+	$query['tax_query'] = array(
+		array(
+			'taxonomy' => $taxonomy,
+			'field' => 'slug',
+			'terms' => $taxonomy_is
+		)
+	);
+	endif;
+
 	$the_query = new WP_Query( $query );
 	$store = array();
 	$dates = array();
@@ -96,7 +116,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	<div id="storyline">
 	
 		<?php 
-			
+			if(is_array($store)):
 			foreach($store as $year => $month_stories):
 				foreach($month_stories as $month => $stories): 
 					
@@ -120,12 +140,13 @@ function monthly_timeline_shortcode_handler( $atts ) {
 				
 				endforeach;
 			endforeach;
-		
+			endif;
 		//$slider = array_reverse ( $slider );
-		foreach($slider as $slide):
-		
-		echo $slide;
-		endforeach;
+		if( is_array( $slider) ) :
+			foreach($slider as $slide):		
+				echo $slide;
+			endforeach;
+		endif;
 		?>
 	</div>
 	<div class="action-container">
@@ -408,4 +429,24 @@ function monthly_timeline_shortcode_handler( $atts ) {
   
   return $output_string;
 	
+}
+
+function monthly_timeline_filter( $taxonomy ) { 
+	
+	$taxonomies = array(  $taxonomy );
+
+	$args = array(
+	    'orderby'       => 'name', 
+	    'order'         => 'ASC',
+	    'hide_empty'    => true, 
+	    'fields'        => 'all', 
+	    'hierarchical'  => false, 
+	);
+	$terms = get_terms( $taxonomies, $args );
+	
+	foreach( $terms as $term ):
+		
+		?><li><a href="#<?php echo $taxonomy.'-'.$term->slug; ?>"><?php echo $term->name; ?></a></li><?php
+		
+	endforeach;
 }
