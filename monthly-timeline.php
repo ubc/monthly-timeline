@@ -21,13 +21,12 @@ function monthly_timeline_shortcode_handler( $atts ) {
 			'taxonomy_is'=> '',
 			'filter_1'   => '',		
 			'filter_2'   => '',			
-			'filter_3'   => '',
+			'filter_3_1'   => '',
+			'filter_3_2'   => '',
 		), $atts )
 	);
 
 
-	
-	
 	wp_enqueue_script( 'monthly-timeline' , plugins_url( 'js/monthly-timeline.js', __FILE__), array('jquery'), '1.0', true );
 	ob_start();
   ?> 
@@ -37,7 +36,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 		<label>Filter By</label>
 		
 		<?php if( $filter_1 ): ?>
-		<div class="btn-group">
+		<div  id="commitment"  class="btn-group">
 			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle"><?php echo $filter_1; ?> <span class="caret"></span></button>
 			<ul class="dropdown-menu">
 				
@@ -46,42 +45,14 @@ function monthly_timeline_shortcode_handler( $atts ) {
 			</ul>
 		</div>
 		<?php endif; ?>
-		<?php if( $filter_2 ): ?>
-		<div class="btn-group">
-			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle"><?php echo $filter_2; ?> <span class="caret"></span></button>
-			<ul class="dropdown-menu">
 				
-			  <li><a href="#<?php echo $filter_2;?>-all">All</a></li>
-			  <?php monthly_timeline_filter( $filter_2 ); ?>
-			</ul>
-		</div>
-		<?php endif; ?>
-		<div class="btn-group">
-			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle">Unit <span class="caret"></span></button>
-			<ul class="dropdown-menu">
-				
-				<li><a href="#all">All</a></li>
-				<li><a href="#applied_science" >Faculty of Applied Science</a></li>
-				<li><a href="#arts" >Faculty of Arts</a></li>
-				<li><a href="#dentistry" >Faculty of Dentistry</a></li>
-				<li><a href="#education" >Faculty of Education</a></li>
-				<li><a href="#forestry" >Faculty of Forestry</a></li>
-				<li><a href="#graduate" >Faculty of Graduate Studies</a></li>
-				<li><a href="#land-food" >Faculty of Land and Food Systems</a></li>
-				<li><a href="#law" >Faculty of Law</a></li>
-				<li><a href="#medicine" >Faculty of Medicine</a></li>
-				<li><a href="#pharmacy" >Faculty of Pharmaceutical Sciences</a></li>
-				<li><a href="#science" >Faculty of Science</a></li>
-				<li><a href="#sauder" >Sauder School of Business</a></li>
-			</ul>
-		</div>
-		<a href="/" class="button action"><span class="arrow-left"></span>Story View</a>
+		<a href="/" class="button action"><i class="icon-angle-left"></i> Story View</a>
 	</div>
 	<?php 
 	if(!empty($query) ):
 		$query = $query.'&posts_per_page=-1&orderby=date&order=DESC';
 	else:
-		$query = $query.'&posts_per_page=-1&orderby=date&order=DESC';
+		$query = 'posts_per_page=-1&orderby=date&order=DESC';
 	endif;
 	
 	$query = wp_parse_args( $query );
@@ -106,7 +77,8 @@ function monthly_timeline_shortcode_handler( $atts ) {
 		$store[get_the_date('Y')][get_the_date('M')][] = array(
 			'title' => get_the_title(),
 			'url'	=> get_permalink(),
-			'image' => get_the_post_thumbnail(get_the_ID(), array(80,80))
+			'image' => get_the_post_thumbnail(get_the_ID(), array(80,80)),
+			'commitment' => monthly_timeline_get_terms(get_the_ID(), 'commitment' ),
 		);
 		$output = '<li>' . get_the_title() . '</li>';
 	endwhile;
@@ -126,8 +98,8 @@ function monthly_timeline_shortcode_handler( $atts ) {
 				<div class="slide '. $year.'-'.$month.'1">
 					<div class="slide-wrap ">';
 					foreach( $stories as $story): 
-					
-						$html .='<a class="story" href="'.$story["url"].'">
+						
+						$html .='<a class="story" data-commitment="'.esc_attr( implode( $story["commitment"], ',' ) ).'" href="'.esc_url($story["url"]).'">
 						'.$story['image'].'
 						<h2>'.$story['title'].'</h2>
 						</a>';
@@ -153,6 +125,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 		<a href="#next" id="next-slide">Next</a> 
 		<a href="#previous" id="previous-slide">Previous</a> 
 	</div>
+	<div class="datesline-shell">
 	<div id="datesline-wrap">
 		<div id="datesline">
 			<?php
@@ -172,6 +145,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 			<?php endforeach; ?>
 		</div>
 	</div>
+	</div>
 </div>
 <style>
 /* TIMELINE VIEW */
@@ -181,7 +155,11 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	position: relative;
 	overflow: hidden;
 }
-
+.datesline-shell{
+	overflow: hidden;
+	width: 875px;
+	margin: 0 auto;
+}
 .filter-wrap {
 	text-align: center;
 	margin: 20px auto;
@@ -259,8 +237,6 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	-webkit-box-shadow: 2px 2px 2px rgba(0,0,0,0.3);
 	box-shadow: 2px 2px 2px rgba(0,0,0,0.3);
 	text-align: left;
-	
-		
 }
 .story:hover h2,
 .story:hover{
@@ -269,7 +245,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 .story:hover {
 	background:#ac006d;
 }
-.last-one{
+#storyline-wrap .last-one{
 	left: -120px;
 	margin-left: 50%;
 }
@@ -431,7 +407,14 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	
 }
 
-function monthly_timeline_filter( $taxonomy ) { 
+/**
+ * monthly_timeline_filter function.
+ * 
+ * @access public
+ * @param mixed $taxonomy
+ * @return void
+ */
+function monthly_timeline_filter( $taxonomy, $filter ) { 
 	
 	$taxonomies = array(  $taxonomy );
 
@@ -446,7 +429,33 @@ function monthly_timeline_filter( $taxonomy ) {
 	
 	foreach( $terms as $term ):
 		
-		?><li><a href="#<?php echo $taxonomy.'-'.$term->slug; ?>"><?php echo $term->name; ?></a></li><?php
+		?><li><a href="#<?php echo $taxonomy.'-'.$term->slug; ?>" data-commitment="<?php echo esc_attr( $term->slug);?>" ><?php echo $term->name; ?></a></li><?php
 		
 	endforeach;
+}
+
+/**
+ * monthly_timeline_get_terms function.
+ * 
+ * @access public
+ * @param mixed $post_id
+ * @param mixed $taxonomy
+ * @return void
+ */
+function monthly_timeline_get_terms($post_id, $taxonomy ){
+	if(empty($taxonomy)){
+		return array();
+	}
+	$taxonomy_terms = get_the_terms( $post_id, $taxonomy );
+	
+	$terms = array();
+	
+	if( $taxonomy_terms ) {
+		foreach( $taxonomy_terms as $term ) {
+			$terms[] = $term->slug;
+		}
+	}
+	
+	return $terms;
+
 }

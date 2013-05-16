@@ -48,7 +48,37 @@
 				
 				dateline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'dateline' ); } );
 			}	
+			
 		});
+			
+		// filtering 
+		$('#commitment a').click(function(event) {
+			 var commitment = $(this).data('commitment');
+			event.preventDefault();
+			
+			if( commitment ) {
+				$('#commitment .btn-small').html( 'commitment: '+commitment+' <span class="caret"></span>');
+				$('.story').each(function( index, el) {
+					var story = $(el);
+					
+					id = story.data('commitment');
+					
+					if(id != commitment){
+						story.hide('200');
+					} else {
+						story.show('200');
+					}
+				});
+			
+			} else {
+				$('#commitment .btn-small').html( 'commitment <span class="caret"></span>');
+				$('.story').show('200');
+			}
+			
+			
+		});
+		// click on the time line
+		
 		
 		jQuery(window).resize(function(){
 			storyline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'storyline' ); } );
@@ -127,7 +157,6 @@
 
 		},
 		remove_class_active_slider: function(el) {
-			console.log('done');
 			jQuery(el).removeClass( 'active-slide' );
 		},
 		remove_class_active_date: function(el){
@@ -183,11 +212,7 @@
 					} );
 					
 				} });
-			
-		
-			
-			
-			
+
 		}
 		
   }
@@ -205,32 +230,26 @@
   
 })( jQuery );
 
-
-
-
 var TimeLine = {
 	
 	ready : function() {
-		
 		jQuery().storyline('init');
-		
 		jQuery('.slide-wrap').each(function(index, el) {
 			TimeLine.mark_as_last(el);
-		});
-			
+		});	
 	},
 	
 	mark_as_last: function(el){
 		var stories = jQuery(el).children('.story');
 		
 		mod = ( stories.length % 3 )
-		if( 2 == mod)
+		if( 2 == mod) {
 			stories.slice(-mod).addClass("last-two");
-		if( 1 == mod)
+		}
+		if( 1 == mod) {
 			stories.slice(-mod).addClass("last-one");
+		}		
 	}
-
-
 }
 jQuery(TimeLine.ready);
 
