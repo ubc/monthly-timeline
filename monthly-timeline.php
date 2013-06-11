@@ -4,7 +4,7 @@ Plugin Name: Monthly Timeline
 Plugin URI: http://ctlt.ubc.ca
 Description: Lets you display you posts every month in a timeline fashion
 Author: Enej UBC CTLT
-Version: 0.3
+Version: 1
 */
 
 
@@ -82,7 +82,21 @@ function monthly_timeline_shortcode_handler( $atts ) {
 		);
 		$output = '<li>' . get_the_title() . '</li>';
 	endwhile;
-	
+	$full_months = array(
+		'Jan'=>'January',
+		'Feb'=>'February',
+		'Mar'=>'March',
+		'Apr'=>'April',
+		'May'=>'May',
+		'Jun'=>'June',
+		'Jul'=>'July',
+		'Aug'=>'August',
+		'Sep'=>'September',
+		'Oct'=>'October',
+		'Nov'=>'November',
+		'Dec'=>'December',
+
+	);
 	wp_reset_postdata();
 	?>
 	<div id="storyline">
@@ -95,7 +109,8 @@ function monthly_timeline_shortcode_handler( $atts ) {
 				$dates[] = array( $month, $year );
 				$html = '
 				
-				<div class="slide '. $year.'-'.$month.'1">
+				<div class="slide ">
+					<h2 class="slide-month-year">'.$full_months[$month].' '. $year.'</h2>
 					<div class="slide-wrap ">';
 					foreach( $stories as $story): 
 						
@@ -175,6 +190,9 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	color:#FFF;
 	margin-right: 10px;
 	text-transform: uppercase;
+}
+.slide-month-year{
+	display: none;
 }
 #story-filter .btn,
 #bubble-filter .btn{
@@ -397,6 +415,119 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	line-height: 1;	
 	font-weight: 100;
 }
+
+/* Portrait tablet to landscape and desktop */
+@media (min-width: 768px) and (max-width: 979px) { 
+	
+	.slide {
+		width: 610px;
+	}
+	
+	.action-container {
+	    left: 50%;
+	    margin-left: -384px;
+	    position: absolute;
+	    top: 150px;
+	    width: 768px;
+	    background: blue;
+	}
+	
+	.slide-wrap {
+    	margin: 0 55px;
+	}
+	#storyline-wrap .last-two {
+    	left: 0;
+    	margin-left: 5px;
+	}
+	
+	#storyline-wrap .story {
+	    background: none repeat scroll 0 0 #FFFFFF;
+	    border-radius: 5px 5px 5px 5px;
+	    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.3);
+	    color: #4C025C;
+	    display: table;
+	    float: left;
+	    height: 80px;
+	    margin: 10px 5px 0;
+	    overflow: hidden;
+	    position: relative;
+	    text-align: left;
+	    text-decoration: none;
+	    width: 240px;
+	}
+	#storyline-wrap .last-one {
+    	left: -120px;
+    	margin-left: 50%;
+	}
+	.datesline-shell {
+	    margin: 0 auto;
+	    overflow: hidden;
+	    width: 590px;
+	}
+	
+	
+}
+
+
+ /* Landscape phone to portrait tablet */
+@media (max-width: 767px) { 
+	
+	.slide {
+		width: 100%;
+		float: none;
+		clear: both;
+		opacity: 1;
+	}
+	#storyline-wrap h2{
+		color: #FFF;
+		margin-left: 15px;
+	} 
+	#storyline-wrap .story{
+		width: 45%;
+		float: left;
+	}
+	#storyline{
+		width: 100%!important;
+	}
+	.slide-month-year{
+		display: block;
+		font-size: 16px;
+		text-align: left;
+		color:#FFF;
+	}
+	.slide-wrap {
+    	margin: 0 10px;
+	}
+	#storyline-wrap .story img{
+		float: none;
+    	height: auto;
+   	 	width: 100%;
+   	 	-webkit-border-radius: 0;
+		-moz-border-radius: 0;
+		border-radius: 0;
+		
+	}
+	#storyline-wrap .story h2{
+		clear: both;
+    	display: block;
+    	float: none;
+    	background: #FFF;
+    	margin: -30px 0 0;
+    	padding: 5px;
+    	min-height: 80px;
+    	z-index: 10;
+    	position: relative;
+    	width: 100%;
+    	
+	}
+	.datesline-shell{
+		display: none;
+	}
+	.action-container{
+		display: none;
+	}
+}
+
 </style>
 
   <?php
@@ -414,7 +545,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
  * @param mixed $taxonomy
  * @return void
  */
-function monthly_timeline_filter( $taxonomy, $filter ) { 
+function monthly_timeline_filter( $taxonomy ) { 
 	
 	$taxonomies = array(  $taxonomy );
 
