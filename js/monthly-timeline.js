@@ -1,5 +1,15 @@
 // lets make our own slider
-
+jQuery(function(){
+	
+	if( window.innerWidth > 767 ) {
+	
+		jQuery().storyline('desktop');
+	
+	} else {
+	
+		jQuery().storyline('mobile');
+	}
+});
 
 (function( $ ) {
   
@@ -9,102 +19,122 @@
   var one_slide_width; // the current width of the slides
   var one_date_width;
   var storyline; // storyline div 
+  var storyline_wrap;
   var dateline; // dateline div
   var slide_index; 
- 
+  var all_stories;
+  var slide_wrap;
+  var slide_event_active = false;
+  var update_to_mobile = 0;
+  var update_make_as_last = 0;
+  var on_device; 
   var methods = {
   	
+  	desktop: function( arg ) {
+  		slider_index = 0;
+  		
+  		methods.init( arg );
+  		methods.recalulate_slides();
+  		methods.setup_slide_events();
+  		on_device = 'desktop';
+  		
+  	},
+  	
+  	mobile: function( arg) {
+  	
+  		slider_index = 0;
+  		methods.init( arg );
+  		on_device = 'mobile';
+  	
+  	},
   	init: function( arg ) { 
      	 // THIS 
         options = $.extend( {}, $.fn.storyline.options, arg );
         
-  		slides = jQuery( options.slides );
-  		dates = jQuery( options.dates );
-  		
-  		storyline = jQuery( options.storyline );
-  		dateline = jQuery( options.dateline );
-		
-		one_slide_width = slides.width();
-		one_date_width  = dates.width();
-				// set the initial widths
-		storyline.css( { width: function () { return one_slide_width * slides.length } } );
-		dateline.css( { width: function () { return one_date_width * dates.length } } );
-		
-		slides.each(function(index, el) {
-			
-			 last_index = slides.length-1;
-			 
-			 if( 0 == index ) {
-			 	
-			 	$(el).addClass('active-slide');
-				
-				slider_index = index;
-				
-				var active_date = dates.get( index );
-				
-				jQuery(active_date).addClass('active-date');
-				// centre the last active div
-				storyline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'storyline' ); } );
-				
-				dateline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'dateline' ); } );
-			}	
-			
-		});
-			
-		// filtering 
+        methods.get_dom();
+        
+        // enable filtering filtering 
 		$('#commitment a').click(function(event) {
-		
-			 var commitment = $(this).data('commitment');
-			 event.preventDefault();
-			
-			if( commitment ) {
-				$('#commitment .btn-small').html( 'commitment: '+commitment+' <span class="caret"></span>');
-				$('.story').each(function( index, el) {
-					var story = $(el);
-					
-					id = story.data('commitment');
-					
-					if(id != commitment){
-						story.hide('200');
-					} else {
-						story.show('200');
-					}
-				});
-			
-			} else {
-				$('#commitment .btn-small').html( 'commitment <span class="caret"></span>');
-				$('.story').show('200');
-			}
-			
-			
-		});
-		// click on the time line
-		jQuery(window).resize(function(){
-			storyline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'storyline' ); } );
-			
+			event.preventDefault();
+			helper.filter(this);
 		});
 		
-		storyline.touchwipe({
-	    	wipeLeft: function() {  helper.move( slider_index, 'next' ); },
-	     	wipeRight: function() { helper.move( slider_index, 'previous' ); },
-	     	min_move_x: 20,
-	     	min_move_y: 20,
-	     	preventDefaultEvents: false
-		});
-    	
-		// next slide
-		jQuery( options.next ).click( function(e){ 
+		//watch for resize event
+  		jQuery(window).resize(function(){ 
+  		
+  			if( window.innerWidth > 767 ) {
+  				
+  				methods.recalulate_slides();
+  				storyline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'storyline' ); } );
+  				
+  				// if swiched from mobile to here
+  				if( on_device == 'mobile') {
+  					
+  					methods.setup_slide_events();
+  					on_device = 'desktop';
+  					
+  				}
+  				
+  			} else {
+  				
+  				// wiched from desktop to 
+  				if( on_device == 'desktop' ) {
+  					methods.setup_slide_events();
+  					storyline.css({width: 'auto', margin:'0'})
+  					slides.css({opacity:1});
+  					on_device = 'mobile';
+  				}
+  			}
+  			
+  		});
+  	},
+  	get_dom: function() {
+  	
+  		slides = $( options.slides );
+  		storyline_wrap = $( options.storyline_wrap);
+  		dates = $( options.dates );
+  		
+  		storyline = $( options.storyline );
+  		dateline = $( options.dateline );
+  		
+  		all_stories = $('.story');
+		slide_wrap  = $('.slide-wrap');
+		
+  	},
+  	teardown_slide_events: function() {
+  		
+  		jQuery( options.next ).off( 'click', "**" );
+  		jQuery( options.previous ).off( 'click', "**" );
+  		dates.off( 'click', "**" );
+  		
+  		jQuery(window).off( 'keypress', "**" );
+  		
+  		
+  		// storyline
+  		storyline_wrap.off('swipeleft', "**");
+  		storyline_wrap.off('swiperight', "**");
+  		storyline_wrap.off('move', "**");
+  		
+  		slide_event_active = false;
+  	},
+  	setup_slide_events: function() {
+  		
+  		if(slide_event_active)
+  			return;
+  		// all the things needed for the slide
+  		slide_event_active = true;
+  		
+  		// next slide
+		jQuery( options.next ).on( 'click' , function(e){ 
 			e.preventDefault();
 			
 			if(helper.is_moving)
 				return;
 			helper.move( slider_index, 'next' );
-			
-			
-			 
 		});
+		
 		// previous slide 
-		jQuery( options.previous ).click( function(e){ 
+		jQuery( options.previous ).on( 'click' , function(e){ 
 			e.preventDefault();
 			if(helper.is_moving)
 				return;
@@ -113,7 +143,7 @@
 		});
 		
 		// click on the time line
-		dates.click(function(event) {
+		dates.on( 'click', function(event) {
 			var that = this;
 			event.preventDefault();
 			if( ! jQuery(this).hasClass('active-date') ) {
@@ -126,24 +156,91 @@
 			
 		});
 		
-		jQuery(window).on('keypress', function(e){ 
-		
+		// lets make the key board work
+		jQuery(window).on( 'keypress' , function(e) { 
+			
+			if( e.target != document.body) // keyboard still works 
+				return;
+			// don't move to fast
 			if(e.keyCode == 39 || e.keyCode == 37) {
 				if(helper.is_moving)
 					return;
 				e.preventDefault();
 			}
 	
-			if(e.keyCode == 39 ){
+			if(e.keyCode == 39 ) {
 				helper.move( slider_index, 'next' );
 			} 
+			
 			if(e.keyCode == 37 ){
 				helper.move( slider_index, 'previous' );
+				
 			}
+		});
+		 
+		// slide events
+  		storyline_wrap.on('swipeleft', function(e) {
+  			
+  			helper.move( slider_index, 'next' );
+  		});
+  		
+  		storyline_wrap.on('swiperight', function(e) {
+  			
+  			helper.move( slider_index, 'previous' ); 
+  			
+  		});
+  		
+  		storyline_wrap.on('movestart', function(e) {
+		  // If the movestart is heading off in an upwards or downwards
+		  // direction, prevent it so that the browser scrolls normally.
+		  if ((e.distX > e.distY && e.distX < -e.distY) ||
+		      (e.distX < e.distY && e.distX > -e.distY)) {
+		    	e.preventDefault();
+		  	}
+			}).on('move', function(e) {
 			
+			var left = 100 * e.distX / one_slide_width;
+			console.log(e);
+			// Move slides with the finger
+			if (e.distX < 0) {
+				
+				storyline[0].style.marginLeft = ( parseInt( storyline[0].style.marginLeft ) + e.deltaX )  +"px";
+							}
+			if (e.distX > 0) {
+				storyline[0].style.marginLeft = ( parseInt( storyline[0].style.marginLeft ) + e.deltaX )  +"px";
+				// console.log('move right', e.distX, left);
+				
+			}
+			})
+  		
+  	},
+  	recalulate_slides: function() {
+  	
+  		// recalculate the slides 
+		one_slide_width = slides.width();
+		one_date_width  = dates.width();
+				// set the initial widths
+		storyline.css( { width: function () { return one_slide_width * slides.length } } );
+		dateline.css( { width: function () { return one_date_width * dates.length } } );
 		
-		 } )
-  	 }
+		
+		helper.mark_all_as_last( false );
+		
+		el = slides.eq( slider_index );
+		$(el).addClass('active-slide');
+		
+		var active_date = dates.get( slider_index );
+				
+		jQuery(active_date).addClass('active-date');
+		
+		storyline.css( 'marginLeft', function( slider_index ){ return  helper.centre( slider_index, 'storyline' ); } );
+				
+		dateline.css( 'marginLeft', function( slider_index ){ return  helper.centre( slider_index, 'dateline' ); } );
+		
+		last_index = slides.length-1;
+		
+
+  	}
   }
  
   $.fn.storyline = function( method ) {
@@ -239,7 +336,87 @@
 					} });
 			
 			} } );
+		},
+		
+		filter: function(that){
+			var commitment = $(that).data('commitment');
 			
+			$('.slide-wrap-empty').hide();
+			$('.slide-empty').removeClass('slide-empty');
+			
+			if( commitment ) {
+				
+				$('#commitment .btn-small').html( 'commitment: '+commitment+' <span class="caret"></span>');
+				
+				all_stories.each(function( index, el) {
+					var story = $(el);
+					
+					id = story.data('commitment');
+					
+					if(id != commitment){
+						story.hide('200');
+					} else {
+						story.show('200');
+					}
+				});
+				
+				// show the empty text
+				var t = setTimeout( function(){
+					slide_wrap.each(function(index, el){
+					var el = $(el);
+					
+						if( el.children(':visible').length == 0 ) {
+							el.find('.slide-wrap-empty').show();
+							el.parent('.slide').addClass('slide-empty');
+						}	
+					
+					});
+					
+					helper.mark_all_as_last( true );
+				},60);
+				
+				
+			} else {
+				helper.mark_all_as_last( true );
+				$('#commitment .btn-small').html( 'commitment <span class="caret"></span>');
+				all_stories.show( '200' );
+			}
+			
+		},
+		mark_all_as_last: function(update){
+			
+			if( update_make_as_last == 0 || 
+			( update_make_as_last > 980 && window.innerWidth < 980) || 
+			( update_make_as_last < 980 && window.innerWidth > 980) || update){
+				
+				
+				all_stories.removeClass('last-one').removeClass('last-two');
+				
+				if(window.innerWidth > 980){
+					mod_num = 3;
+				} else {
+					mod_num = 2;
+				}
+				
+				slide_wrap.each(function(index, el) {
+					helper.mark_as_last(el, mod_num);
+				});	
+				
+				update_make_as_last = window.innerWidth;
+			}
+		},
+		
+		mark_as_last: function(el, mod_num ) {
+			
+			var stories = jQuery(el).find('a:visible');
+			
+			mod = ( stories.length % mod_num )
+			if( 2 == mod) {
+				stories.slice(-mod).addClass("last-two");
+			}
+			if( 1 == mod) {
+				stories.slice(-mod).addClass("last-one");
+			} 
 		}
 		
   }
@@ -257,159 +434,716 @@
   
 })( jQuery );
 
-var TimeLine = {
-	update_make_as_last: 0,
-	ready : function() {
-		jQuery().storyline('init');
-		TimeLine.mark_all_as_last();
-		
-		jQuery(window).resize(function(){
-			
-			jQuery().storyline('init');
-			TimeLine.mark_all_as_last();
-		});
-	},
-	mark_all_as_last: function(){
-		if( TimeLine.update_make_as_last == 0 || 
-		( TimeLine.update_make_as_last > 980 && window.innerWidth < 980) || 
-		( TimeLine.update_make_as_last < 980 && window.innerWidth > 980) ){
-			if(window.innerWidth > 980){
-				mod_num = 3;
-			} else {
-				mod_num = 2;
-			}
-			
-			jQuery('.slide-wrap').each(function(index, el) {
-				TimeLine.mark_as_last(el, mod_num);
-			});	
-			
-			TimeLine.update_make_as_last = window.innerWidth;
-		}
-	},
-	mark_as_last: function(el, mod_num ) {
-		
-		var stories = jQuery(el).children('.story');
-		stories.removeClass('last-one').removeClass('last-two');
-		mod = ( stories.length % mod_num )
-		if( 2 == mod) {
-			stories.slice(-mod).addClass("last-two");
-		}
-		if( 1 == mod) {
-			stories.slice(-mod).addClass("last-one");
-		} 
+
+// jquery.event.move
+//
+// 1.3.1
+//
+// Stephen Band
+//
+// Triggers 'movestart', 'move' and 'moveend' events after
+// mousemoves following a mousedown cross a distance threshold,
+// similar to the native 'dragstart', 'drag' and 'dragend' events.
+// Move events are throttled to animation frames. Move event objects
+// have the properties:
+//
+// pageX:
+// pageY:   Page coordinates of pointer.
+// startX:
+// startY:  Page coordinates of pointer at movestart.
+// distX:
+// distY:  Distance the pointer has moved since movestart.
+// deltaX:
+// deltaY:  Distance the finger has moved since last event.
+// velocityX:
+// velocityY:  Average velocity over last few events.
+
+
+(function (module) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['jquery'], module);
+	} else {
+		// Browser globals
+		module(jQuery);
 	}
-}
-jQuery(TimeLine.ready);
+})(function(jQuery, undefined){
 
-/**
- * jQuery Plugin to obtain touch gestures from iPhone, iPod Touch and iPad, should also work with Android mobile phones (not tested yet!)
- * Common usage: wipe images (left and right to show the previous or next image)
- * 
- * @author Nishanth Sudharsanam 
- * @version 1.2 Allowed tracking of amount of swipe which is passed to the callback.
- * 
- * @author Andreas Waltl, netCU Internetagentur (http://www.netcu.de)
- * @version 1.1.1 (9th December 2010) - fix bug (older IE's had problems)
- * @version 1.1 (1st September 2010) - support wipe up and wipe down
- * @version 1.0 (15th July 2010)
- */
-(function($) { 
-   $.fn.touchwipe = function(settings) {
-     var config = {
-      	min_move_x: 20,
-    		min_move_y: 20,
- 			wipeLeft: function() { },
- 			wipeRight: function() { },
- 			wipeUp: function() { },
- 			wipeDown: function() { },
- 			preventDefaultEvents: false, // prevent default on swipe
-			preventDefaultEventsX: true, // prevent default is touchwipe is triggered on horizontal movement
-			preventDefaultEventsY: false // prevent default is touchwipe is triggered on vertical movement
-	 };
-     
-     if (settings) $.extend(config, settings);
+	var // Number of pixels a pressed pointer travels before movestart
+	    // event is fired.
+	    threshold = 6,
+	
+	    add = jQuery.event.add,
+	
+	    remove = jQuery.event.remove,
 
-     this.each(function() {
-    	 var startX;
-    	 var startY;
-		 var isMoving = false;
-		 var touchesX = [];
-		 var touchesY = [];
-	     var timer;
-    	 function cancelTouch() {
-    		 this.removeEventListener('touchmove', onTouchMove);
-    		 startX = null;
-    		 startY = null;
-    		 isMoving = false;
-    	 }	
-    	 
-    	 function onTouchMove(e) {
-    		 if(config.preventDefaultEvents) {
-    					 e.preventDefault(); 
-    		 		}
-    		 if(isMoving) {
-	    		 var x = e.touches[0].pageX;
-	    		 var y = e.touches[0].pageY;
-	    		 var dx = startX - x;
-	    		 var dy = startY - y;
-	    		 if(Math.abs(dx) >= config.min_move_x) {
-	    			if(config.preventDefaultEventsX) {
-    					 e.preventDefault(); 
-    		 		}
-	    		 	touchesX.push(dx);
-					if(touchesX.length === 1){ // first call.. 
-	    		 		timer=setTimeout(function(){ // wait a while incase we get other touchmove events
-	    		 			cancelTouch();
-	    		 			dxFinal = touchesX.pop();
-	    		 			touchesX = []; // empty touches
-	    		 			// call callbacks
-	    					if(dxFinal > 0) {
-	    						config.wipeLeft(Math.abs(dxFinal));
-	    					}
-	    					else {
-	    						config.wipeRight(Math.abs(dxFinal));
-	    					}
-	    		 		},200);
-	    		 	}
-	    		 }
-	    		 else if(Math.abs(dy) >= config.min_move_y) {
-	    		    if(config.preventDefaultEventsY) {
-    					 e.preventDefault(); 
-    		 		}
-	    		 	touchesY.push(dy);
-					if(touchesY.length === 1){ // first call.. 
-	    		 		timer=setTimeout(function(){ // wait a while incase we get other touchmove events
-	    		 			cancelTouch();
-	    		 			dyFinal = touchesY.pop();
-	    		 			touchesY = []; // empty touches
-	    		 			// call callbacks
-	    					if(dyFinal > 0) {
-	    						config.wipeDown(Math.abs(dyFinal));
-	    					}
-	    					else {
-	    						config.wipeUp(Math.abs(dyFinal));
-	    					}
-	    		 		},200);
-	    		 	}
-		    	}
-    		 }
-    	 }
-    	 
-    	 function onTouchStart(e)
-    	 {
-    		 if (e.touches.length == 1) {
-    			 startX = e.touches[0].pageX;
-    			 startY = e.touches[0].pageY;
-    			 isMoving = true;
-    			 this.addEventListener('touchmove', onTouchMove, false);
-    		 }
-    	 }    	 
-    	 if ('ontouchstart' in document.documentElement) {
-    		 this.addEventListener('touchstart', onTouchStart, false);
-    	 }
-     });
- 
-     return this;
-   };
- 
- })(jQuery);
+	    // Just sugar, so we can have arguments in the same order as
+	    // add and remove.
+	    trigger = function(node, type, data) {
+	    	jQuery.event.trigger(type, data, node);
+	    },
+
+	    // Shim for requestAnimationFrame, falling back to timer. See:
+	    // see http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+	    requestFrame = (function(){
+	    	return (
+	    		window.requestAnimationFrame ||
+	    		window.webkitRequestAnimationFrame ||
+	    		window.mozRequestAnimationFrame ||
+	    		window.oRequestAnimationFrame ||
+	    		window.msRequestAnimationFrame ||
+	    		function(fn, element){
+	    			return window.setTimeout(function(){
+	    				fn();
+	    			}, 25);
+	    		}
+	    	);
+	    })(),
+	    
+	    ignoreTags = {
+	    	textarea: true,
+	    	input: true,
+	    	select: true,
+	    	button: true
+	    },
+	    
+	    mouseevents = {
+	    	move: 'mousemove',
+	    	cancel: 'mouseup dragstart',
+	    	end: 'mouseup'
+	    },
+	    
+	    touchevents = {
+	    	move: 'touchmove',
+	    	cancel: 'touchend',
+	    	end: 'touchend'
+	    };
+
+
+	// Constructors
+	
+	function Timer(fn){
+		var callback = fn,
+				active = false,
+				running = false;
+		
+		function trigger(time) {
+			if (active){
+				callback();
+				requestFrame(trigger);
+				running = true;
+				active = false;
+			}
+			else {
+				running = false;
+			}
+		}
+		
+		this.kick = function(fn) {
+			active = true;
+			if (!running) { trigger(); }
+		};
+		
+		this.end = function(fn) {
+			var cb = callback;
+			
+			if (!fn) { return; }
+			
+			// If the timer is not running, simply call the end callback.
+			if (!running) {
+				fn();
+			}
+			// If the timer is running, and has been kicked lately, then
+			// queue up the current callback and the end callback, otherwise
+			// just the end callback.
+			else {
+				callback = active ?
+					function(){ cb(); fn(); } : 
+					fn ;
+				
+				active = true;
+			}
+		};
+	}
+
+
+	// Functions
+	
+	function returnTrue() {
+		return true;
+	}
+	
+	function returnFalse() {
+		return false;
+	}
+	
+	function preventDefault(e) {
+		e.preventDefault();
+	}
+	
+	function preventIgnoreTags(e) {
+		// Don't prevent interaction with form elements.
+		if (ignoreTags[ e.target.tagName.toLowerCase() ]) { return; }
+		
+		e.preventDefault();
+	}
+
+	function isLeftButton(e) {
+		// Ignore mousedowns on any button other than the left (or primary)
+		// mouse button, or when a modifier key is pressed.
+		return (e.which === 1 && !e.ctrlKey && !e.altKey);
+	}
+
+	function identifiedTouch(touchList, id) {
+		var i, l;
+
+		if (touchList.identifiedTouch) {
+			return touchList.identifiedTouch(id);
+		}
+		
+		// touchList.identifiedTouch() does not exist in
+		// webkit yet… we must do the search ourselves...
+		
+		i = -1;
+		l = touchList.length;
+		
+		while (++i < l) {
+			if (touchList[i].identifier === id) {
+				return touchList[i];
+			}
+		}
+	}
+
+	function changedTouch(e, event) {
+		var touch = identifiedTouch(e.changedTouches, event.identifier);
+
+		// This isn't the touch you're looking for.
+		if (!touch) { return; }
+
+		// Chrome Android (at least) includes touches that have not
+		// changed in e.changedTouches. That's a bit annoying. Check
+		// that this touch has changed.
+		if (touch.pageX === event.pageX && touch.pageY === event.pageY) { return; }
+
+		return touch;
+	}
+
+
+	// Handlers that decide when the first movestart is triggered
+	
+	function mousedown(e){
+		var data;
+
+		if (!isLeftButton(e)) { return; }
+
+		data = {
+			target: e.target,
+			startX: e.pageX,
+			startY: e.pageY,
+			timeStamp: e.timeStamp
+		};
+
+		add(document, mouseevents.move, mousemove, data);
+		add(document, mouseevents.cancel, mouseend, data);
+	}
+
+	function mousemove(e){
+		var data = e.data;
+
+		checkThreshold(e, data, e, removeMouse);
+	}
+
+	function mouseend(e) {
+		removeMouse();
+	}
+
+	function removeMouse() {
+		remove(document, mouseevents.move, mousemove);
+		remove(document, mouseevents.cancel, mouseend);
+	}
+
+	function touchstart(e) {
+		var touch, template;
+
+		// Don't get in the way of interaction with form elements.
+		if (ignoreTags[ e.target.tagName.toLowerCase() ]) { return; }
+
+		touch = e.changedTouches[0];
+		
+		// iOS live updates the touch objects whereas Android gives us copies.
+		// That means we can't trust the touchstart object to stay the same,
+		// so we must copy the data. This object acts as a template for
+		// movestart, move and moveend event objects.
+		template = {
+			target: touch.target,
+			startX: touch.pageX,
+			startY: touch.pageY,
+			timeStamp: e.timeStamp,
+			identifier: touch.identifier
+		};
+
+		// Use the touch identifier as a namespace, so that we can later
+		// remove handlers pertaining only to this touch.
+		add(document, touchevents.move + '.' + touch.identifier, touchmove, template);
+		add(document, touchevents.cancel + '.' + touch.identifier, touchend, template);
+	}
+
+	function touchmove(e){
+		var data = e.data,
+		    touch = changedTouch(e, data);
+
+		if (!touch) { return; }
+
+		checkThreshold(e, data, touch, removeTouch);
+	}
+
+	function touchend(e) {
+		var template = e.data,
+		    touch = identifiedTouch(e.changedTouches, template.identifier);
+
+		if (!touch) { return; }
+
+		removeTouch(template.identifier);
+	}
+
+	function removeTouch(identifier) {
+		remove(document, '.' + identifier, touchmove);
+		remove(document, '.' + identifier, touchend);
+	}
+
+
+	// Logic for deciding when to trigger a movestart.
+
+	function checkThreshold(e, template, touch, fn) {
+		var distX = touch.pageX - template.startX,
+		    distY = touch.pageY - template.startY;
+
+		// Do nothing if the threshold has not been crossed.
+		if ((distX * distX) + (distY * distY) < (threshold * threshold)) { return; }
+
+		triggerStart(e, template, touch, distX, distY, fn);
+	}
+
+	function handled() {
+		// this._handled should return false once, and after return true.
+		this._handled = returnTrue;
+		return false;
+	}
+
+	function flagAsHandled(e) {
+		e._handled();
+	}
+
+	function triggerStart(e, template, touch, distX, distY, fn) {
+		var node = template.target,
+		    touches, time;
+
+		touches = e.targetTouches;
+		time = e.timeStamp - template.timeStamp;
+
+		// Create a movestart object with some special properties that
+		// are passed only to the movestart handlers.
+		template.type = 'movestart';
+		template.distX = distX;
+		template.distY = distY;
+		template.deltaX = distX;
+		template.deltaY = distY;
+		template.pageX = touch.pageX;
+		template.pageY = touch.pageY;
+		template.velocityX = distX / time;
+		template.velocityY = distY / time;
+		template.targetTouches = touches;
+		template.finger = touches ?
+			touches.length :
+			1 ;
+
+		// The _handled method is fired to tell the default movestart
+		// handler that one of the move events is bound.
+		template._handled = handled;
+			
+		// Pass the touchmove event so it can be prevented if or when
+		// movestart is handled.
+		template._preventTouchmoveDefault = function() {
+			e.preventDefault();
+		};
+
+		// Trigger the movestart event.
+		trigger(template.target, template);
+
+		// Unbind handlers that tracked the touch or mouse up till now.
+		fn(template.identifier);
+	}
+
+
+	// Handlers that control what happens following a movestart
+
+	function activeMousemove(e) {
+		var event = e.data.event,
+		    timer = e.data.timer;
+
+		updateEvent(event, e, e.timeStamp, timer);
+	}
+
+	function activeMouseend(e) {
+		var event = e.data.event,
+		    timer = e.data.timer;
+		
+		removeActiveMouse();
+
+		endEvent(event, timer, function() {
+			// Unbind the click suppressor, waiting until after mouseup
+			// has been handled.
+			setTimeout(function(){
+				remove(event.target, 'click', returnFalse);
+			}, 0);
+		});
+	}
+
+	function removeActiveMouse(event) {
+		remove(document, mouseevents.move, activeMousemove);
+		remove(document, mouseevents.end, activeMouseend);
+	}
+
+	function activeTouchmove(e) {
+		var event = e.data.event,
+		    timer = e.data.timer,
+		    touch = changedTouch(e, event);
+
+		if (!touch) { return; }
+
+		// Stop the interface from gesturing
+		e.preventDefault();
+
+		event.targetTouches = e.targetTouches;
+		updateEvent(event, touch, e.timeStamp, timer);
+	}
+
+	function activeTouchend(e) {
+		var event = e.data.event,
+		    timer = e.data.timer,
+		    touch = identifiedTouch(e.changedTouches, event.identifier);
+
+		// This isn't the touch you're looking for.
+		if (!touch) { return; }
+
+		removeActiveTouch(event);
+		endEvent(event, timer);
+	}
+
+	function removeActiveTouch(event) {
+		remove(document, '.' + event.identifier, activeTouchmove);
+		remove(document, '.' + event.identifier, activeTouchend);
+	}
+
+
+	// Logic for triggering move and moveend events
+
+	function updateEvent(event, touch, timeStamp, timer) {
+		var time = timeStamp - event.timeStamp;
+
+		event.type = 'move';
+		event.distX =  touch.pageX - event.startX;
+		event.distY =  touch.pageY - event.startY;
+		event.deltaX = touch.pageX - event.pageX;
+		event.deltaY = touch.pageY - event.pageY;
+		
+		// Average the velocity of the last few events using a decay
+		// curve to even out spurious jumps in values.
+		event.velocityX = 0.3 * event.velocityX + 0.7 * event.deltaX / time;
+		event.velocityY = 0.3 * event.velocityY + 0.7 * event.deltaY / time;
+		event.pageX =  touch.pageX;
+		event.pageY =  touch.pageY;
+
+		timer.kick();
+	}
+
+	function endEvent(event, timer, fn) {
+		timer.end(function(){
+			event.type = 'moveend';
+
+			trigger(event.target, event);
+			
+			return fn && fn();
+		});
+	}
+
+
+	// jQuery special event definition
+
+	function setup(data, namespaces, eventHandle) {
+		// Stop the node from being dragged
+		//add(this, 'dragstart.move drag.move', preventDefault);
+		
+		// Prevent text selection and touch interface scrolling
+		//add(this, 'mousedown.move', preventIgnoreTags);
+		
+		// Tell movestart default handler that we've handled this
+		add(this, 'movestart.move', flagAsHandled);
+
+		// Don't bind to the DOM. For speed.
+		return true;
+	}
+	
+	function teardown(namespaces) {
+		remove(this, 'dragstart drag', preventDefault);
+		remove(this, 'mousedown touchstart', preventIgnoreTags);
+		remove(this, 'movestart', flagAsHandled);
+		
+		// Don't bind to the DOM. For speed.
+		return true;
+	}
+	
+	function addMethod(handleObj) {
+		// We're not interested in preventing defaults for handlers that
+		// come from internal move or moveend bindings
+		if (handleObj.namespace === "move" || handleObj.namespace === "moveend") {
+			return;
+		}
+		
+		// Stop the node from being dragged
+		add(this, 'dragstart.' + handleObj.guid + ' drag.' + handleObj.guid, preventDefault, undefined, handleObj.selector);
+		
+		// Prevent text selection and touch interface scrolling
+		add(this, 'mousedown.' + handleObj.guid, preventIgnoreTags, undefined, handleObj.selector);
+	}
+	
+	function removeMethod(handleObj) {
+		if (handleObj.namespace === "move" || handleObj.namespace === "moveend") {
+			return;
+		}
+		
+		remove(this, 'dragstart.' + handleObj.guid + ' drag.' + handleObj.guid);
+		remove(this, 'mousedown.' + handleObj.guid);
+	}
+	
+	jQuery.event.special.movestart = {
+		setup: setup,
+		teardown: teardown,
+		add: addMethod,
+		remove: removeMethod,
+
+		_default: function(e) {
+			var template, data;
+			
+			// If no move events were bound to any ancestors of this
+			// target, high tail it out of here.
+			if (!e._handled()) { return; }
+
+			template = {
+				target: e.target,
+				startX: e.startX,
+				startY: e.startY,
+				pageX: e.pageX,
+				pageY: e.pageY,
+				distX: e.distX,
+				distY: e.distY,
+				deltaX: e.deltaX,
+				deltaY: e.deltaY,
+				velocityX: e.velocityX,
+				velocityY: e.velocityY,
+				timeStamp: e.timeStamp,
+				identifier: e.identifier,
+				targetTouches: e.targetTouches,
+				finger: e.finger
+			};
+
+			data = {
+				event: template,
+				timer: new Timer(function(time){
+					trigger(e.target, template);
+				})
+			};
+			
+			if (e.identifier === undefined) {
+				// We're dealing with a mouse
+				// Stop clicks from propagating during a move
+				add(e.target, 'click', returnFalse);
+				add(document, mouseevents.move, activeMousemove, data);
+				add(document, mouseevents.end, activeMouseend, data);
+			}
+			else {
+				// We're dealing with a touch. Stop touchmove doing
+				// anything defaulty.
+				e._preventTouchmoveDefault();
+				add(document, touchevents.move + '.' + e.identifier, activeTouchmove, data);
+				add(document, touchevents.end + '.' + e.identifier, activeTouchend, data);
+			}
+		}
+	};
+
+	jQuery.event.special.move = {
+		setup: function() {
+			// Bind a noop to movestart. Why? It's the movestart
+			// setup that decides whether other move events are fired.
+			add(this, 'movestart.move', jQuery.noop);
+		},
+		
+		teardown: function() {
+			remove(this, 'movestart.move', jQuery.noop);
+		}
+	};
+	
+	jQuery.event.special.moveend = {
+		setup: function() {
+			// Bind a noop to movestart. Why? It's the movestart
+			// setup that decides whether other move events are fired.
+			add(this, 'movestart.moveend', jQuery.noop);
+		},
+		
+		teardown: function() {
+			remove(this, 'movestart.moveend', jQuery.noop);
+		}
+	};
+
+	add(document, 'mousedown.move', mousedown);
+	add(document, 'touchstart.move', touchstart);
+
+	// Make jQuery copy touch event properties over to the jQuery event
+	// object, if they are not already listed. But only do the ones we
+	// really need. IE7/8 do not have Array#indexOf(), but nor do they
+	// have touch events, so let's assume we can ignore them.
+	if (typeof Array.prototype.indexOf === 'function') {
+		(function(jQuery, undefined){
+			var props = ["changedTouches", "targetTouches"],
+			    l = props.length;
+			
+			while (l--) {
+				if (jQuery.event.props.indexOf(props[l]) === -1) {
+					jQuery.event.props.push(props[l]);
+				}
+			}
+		})(jQuery);
+	};
+});
+
+
+// jQuery.event.swipe
+// 0.5
+// Stephen Band
+
+// Dependencies
+// jQuery.event.move 1.2
+
+// One of swipeleft, swiperight, swipeup or swipedown is triggered on
+// moveend, when the move has covered a threshold ratio of the dimension
+// of the target node, or has gone really fast. Threshold and velocity
+// sensitivity changed with:
+//
+// jQuery.event.special.swipe.settings.threshold
+// jQuery.event.special.swipe.settings.sensitivity
+
+(function (module) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['jquery'], module);
+	} else {
+		// Browser globals
+		module(jQuery);
+	}
+})(function(jQuery, undefined){
+	var add = jQuery.event.add,
+	   
+	    remove = jQuery.event.remove,
+
+	    // Just sugar, so we can have arguments in the same order as
+	    // add and remove.
+	    trigger = function(node, type, data) {
+	    	jQuery.event.trigger(type, data, node);
+	    },
+
+	    settings = {
+	    	// Ratio of distance over target finger must travel to be
+	    	// considered a swipe.
+	    	threshold: 0.2,
+	    	// Faster fingers can travel shorter distances to be considered
+	    	// swipes. 'sensitivity' controls how much. Bigger is shorter.
+	    	sensitivity: 6
+	    };
+
+	function moveend(e) {
+		var w, h, event;
+
+		w = e.target.offsetWidth;
+		h = e.target.offsetHeight;
+
+		// Copy over some useful properties from the move event
+		event = {
+			distX: e.distX,
+			distY: e.distY,
+			velocityX: e.velocityX,
+			velocityY: e.velocityY,
+			finger: e.finger
+		};
+
+		// Find out which of the four directions was swiped
+		if (e.distX > e.distY) {
+			if (e.distX > -e.distY) {
+				if (e.distX/w > settings.threshold || e.velocityX * e.distX/w * settings.sensitivity > 1) {
+					event.type = 'swiperight';
+					trigger(e.currentTarget, event);
+				}
+			}
+			else {
+				if (-e.distY/h > settings.threshold || e.velocityY * e.distY/w * settings.sensitivity > 1) {
+					event.type = 'swipeup';
+					trigger(e.currentTarget, event);
+				}
+			}
+		}
+		else {
+			if (e.distX > -e.distY) {
+				if (e.distY/h > settings.threshold || e.velocityY * e.distY/w * settings.sensitivity > 1) {
+					event.type = 'swipedown';
+					trigger(e.currentTarget, event);
+				}
+			}
+			else {
+				if (-e.distX/w > settings.threshold || e.velocityX * e.distX/w * settings.sensitivity > 1) {
+					event.type = 'swipeleft';
+					trigger(e.currentTarget, event);
+				}
+			}
+		}
+	}
+
+	function getData(node) {
+		var data = jQuery.data(node, 'event_swipe');
+		
+		if (!data) {
+			data = { count: 0 };
+			jQuery.data(node, 'event_swipe', data);
+		}
+		
+		return data;
+	}
+
+	jQuery.event.special.swipe =
+	jQuery.event.special.swipeleft =
+	jQuery.event.special.swiperight =
+	jQuery.event.special.swipeup =
+	jQuery.event.special.swipedown = {
+		setup: function( data, namespaces, eventHandle ) {
+			var data = getData(this);
+
+			// If another swipe event is already setup, don't setup again.
+			if (data.count++ > 0) { return; }
+
+			add(this, 'moveend', moveend);
+
+			return true;
+		},
+
+		teardown: function() {
+			var data = getData(this);
+
+			// If another swipe event is still setup, don't teardown.
+			if (--data.count > 0) { return; }
+
+			remove(this, 'moveend', moveend);
+
+			return true;
+		},
+
+		settings: settings
+	};
+});

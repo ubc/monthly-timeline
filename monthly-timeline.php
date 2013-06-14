@@ -23,6 +23,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 			'filter_2'   => '',			
 			'filter_3_1'   => '',
 			'filter_3_2'   => '',
+			'empty' =>''
 		), $atts )
 	);
 
@@ -120,6 +121,13 @@ function monthly_timeline_shortcode_handler( $atts ) {
 						</a>';
 					
 					endforeach;
+					
+					if( empty( $stories) ){
+						$html .='<div class="slide-wrap-empty">'.$empty.'</div>';
+					} else {
+						$html .='<div class="slide-wrap-empty" style="display:none">'.$empty.'</div>';
+					}
+					
 				$html .='	</div>
 				</div>';
 				
@@ -133,6 +141,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 			foreach($slider as $slide):		
 				echo $slide;
 			endforeach;
+			
 		endif;
 		?>
 	</div>
@@ -236,6 +245,8 @@ function monthly_timeline_shortcode_handler( $atts ) {
 }
 .slide-wrap{
 	margin: 0 60px;
+	position: relative;
+	overflow: hidden;
 }
 .active-slide{
 	opacity: 1;
