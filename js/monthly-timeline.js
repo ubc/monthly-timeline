@@ -200,7 +200,7 @@ jQuery(function(){
 			}).on('move', function(e) {
 			
 			var left = 100 * e.distX / one_slide_width;
-			console.log(e);
+			
 			// Move slides with the finger
 			if (e.distX < 0) {
 				
@@ -362,9 +362,10 @@ jQuery(function(){
 				
 				// show the empty text
 				var t = setTimeout( function(){
+				
 					slide_wrap.each(function(index, el){
-					var el = $(el);
-					
+						var el = $(el);
+						
 						if( el.children(':visible').length == 0 ) {
 							el.find('.slide-wrap-empty').show();
 							el.parent('.slide').addClass('slide-empty');
@@ -373,7 +374,7 @@ jQuery(function(){
 					});
 					
 					helper.mark_all_as_last( true );
-				},60);
+				},600);
 				
 				
 			} else {
