@@ -1,7 +1,11 @@
+
+function inner_width(){
+	return window.innerWidth || document.documentElement.clientWidth;
+}
 // lets make our own slider
 jQuery(function(){
 	
-	if( window.innerWidth > 767 ) {
+	if( inner_width() > 767 ) {
 	
 		jQuery().storyline('desktop');
 	
@@ -62,7 +66,7 @@ jQuery(function(){
 		//watch for resize event
   		jQuery(window).resize(function(){ 
   		
-  			if( window.innerWidth > 767 ) {
+  			if( inner_width() > 767 ) {
   				
   				methods.recalulate_slides();
   				storyline.css( 'marginLeft', function( index ){ return  helper.centre( slider_index, 'storyline' ); } );
@@ -376,24 +380,23 @@ jQuery(function(){
 					helper.mark_all_as_last( true );
 				},600);
 				
-				
 			} else {
-				helper.mark_all_as_last( true );
 				$('#commitment .btn-small').html( 'commitment <span class="caret"></span>');
 				all_stories.show( '200' );
+				helper.mark_all_as_last( true );
 			}
 			
 		},
 		mark_all_as_last: function(update){
 			
 			if( update_make_as_last == 0 || 
-			( update_make_as_last > 980 && window.innerWidth < 980) || 
-			( update_make_as_last < 980 && window.innerWidth > 980) || update){
+			( update_make_as_last > 980 && inner_width() < 980) || 
+			( update_make_as_last < 980 && inner_width() > 980) || update){
 				
 				
 				all_stories.removeClass('last-one').removeClass('last-two');
 				
-				if(window.innerWidth > 980){
+				if(inner_width() > 980){
 					mod_num = 3;
 				} else {
 					mod_num = 2;
@@ -403,7 +406,7 @@ jQuery(function(){
 					helper.mark_as_last(el, mod_num);
 				});	
 				
-				update_make_as_last = window.innerWidth;
+				update_make_as_last = inner_width();
 			}
 		},
 		
