@@ -4,7 +4,7 @@ Plugin Name: Monthly Timeline
 Plugin URI: http://ctlt.ubc.ca
 Description: Lets you display you posts every month in a timeline fashion
 Author: Enej UBC CTLT
-Version: 1
+Version: 1.0.0
 */
 
 
