@@ -1,4 +1,4 @@
-<?php 
+<?php
 /*
 Plugin Name: Monthly Timeline
 Plugin URI: http://ctlt.ubc.ca
@@ -9,18 +9,18 @@ Version: 1.0.0
 
 
 add_shortcode('monthly-timeline', 'monthly_timeline_shortcode_handler');
- 
+
 function monthly_timeline_shortcode_handler( $atts ) {
-	
-	
+
+
 	// Attributes
 	extract( shortcode_atts(
 		array(
 			'query' => '',
 			'taxonomy'   => '',
 			'taxonomy_is'=> '',
-			'filter_1'   => '',		
-			'filter_2'   => '',			
+			'filter_1'   => '',
+			'filter_2'   => '',
 			'filter_3_1'   => '',
 			'filter_3_2'   => '',
 			'empty' =>''
@@ -30,34 +30,34 @@ function monthly_timeline_shortcode_handler( $atts ) {
 
 	wp_enqueue_script( 'monthly-timeline' , plugins_url( 'js/monthly-timeline.js', __FILE__), array('jquery'), '1.0', true );
 	ob_start();
-  ?> 
+  ?>
   <div id="storyline-wrap">
 	<div id="story-filter"  class="filter-wrap">
-	
+
 		<label>Filter By</label>
-		
+
 		<?php if( $filter_1 ): ?>
 		<div  id="commitment"  class="btn-group">
 			<button data-toggle="dropdown" class="btn btn-small dropdown-toggle"><?php echo $filter_1; ?> <span class="caret"></span></button>
 			<ul class="dropdown-menu">
-				
+
 			  <li><a href="#<?php echo $filter_1;?>-all">All</a></li>
 			  <?php monthly_timeline_filter( $filter_1 ); ?>
 			</ul>
 		</div>
 		<?php endif; ?>
-				
+
 		<a href="/" class="button action"><i class="icon-angle-left"></i> Story View</a>
 	</div>
-	<?php 
+	<?php
 	if(!empty($query) ):
 		$query = $query.'&posts_per_page=-1&orderby=date&order=DESC';
 	else:
 		$query = 'posts_per_page=-1&orderby=date&order=DESC';
 	endif;
-	
+
 	$query = wp_parse_args( $query );
-	
+
 	if( !empty($taxonomy) && !empty($taxonomy_is)):
 	$query['tax_query'] = array(
 		array(
@@ -71,10 +71,10 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	$the_query = new WP_Query( $query );
 	$store = array();
 	$dates = array();
-	
+
 	while ( $the_query->have_posts() ):
 		$the_query->the_post();
-		
+
 		$store[get_the_date('Y')][get_the_date('M')][] = array(
 			'title' => get_the_title(),
 			'url'	=> get_permalink(),
@@ -101,53 +101,53 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	wp_reset_postdata();
 	?>
 	<div id="storyline">
-	
-		<?php 
+
+		<?php
 			if(is_array($store)):
 			foreach($store as $year => $month_stories):
-				foreach($month_stories as $month => $stories): 
-					
+				foreach($month_stories as $month => $stories):
+
 				$dates[] = array( $month, $year );
 				$html = '
-				
+
 				<div class="slide ">
 					<h2 class="slide-month-year">'.$full_months[$month].' '. $year.'</h2>
 					<div class="slide-wrap ">';
-					foreach( $stories as $story): 
-						
+					foreach( $stories as $story):
+
 						$html .='<a class="story" data-commitment="'.esc_attr( implode( $story["commitment"], ',' ) ).'" href="'.esc_url($story["url"]).'">
 						'.$story['image'].'
 						<h2>'.$story['title'].'</h2>
 						</a>';
-					
+
 					endforeach;
-					
+
 					if( empty( $stories) ){
 						$html .='<div class="slide-wrap-empty">'.$empty.'</div>';
 					} else {
 						$html .='<div class="slide-wrap-empty" style="display:none">'.$empty.'</div>';
 					}
-					
+
 				$html .='	</div>
 				</div>';
-				
+
 				$slider[] = $html;
-				
+
 				endforeach;
 			endforeach;
 			endif;
 		//$slider = array_reverse ( $slider );
 		if( is_array( $slider) ) :
-			foreach($slider as $slide):		
+			foreach($slider as $slide):
 				echo $slide;
 			endforeach;
-			
+
 		endif;
 		?>
 	</div>
 	<div class="action-container">
-		<a href="#next" id="next-slide">Next</a> 
-		<a href="#previous" id="previous-slide">Previous</a> 
+		<a href="#next" id="next-slide">Next</a>
+		<a href="#previous" id="previous-slide">Previous</a>
 	</div>
 	<div class="datesline-shell">
 	<div id="datesline-wrap">
@@ -159,11 +159,11 @@ function monthly_timeline_shortcode_handler( $atts ) {
 					<div class="date-wrap">
 						<div class="date-wrap-outer">
 							<div class="date-wrap-inner">
-								<span class="date-month date-part"><?php echo $date[0]; ?></span> 
+								<span class="date-month date-part"><?php echo $date[0]; ?></span>
 								<span class="date-year date-part"><?php echo $date[1]; ?></span>
 							</div>
 						</div>
-			
+
 					</div>
 				</a>
 			<?php endforeach; ?>
@@ -337,16 +337,16 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	clear: both;
 	width: 100%;
 	position: relative;
-	background: url( <?php echo plugins_url('/monthly-timeline/img/month-view.png'); ?> ) no-repeat 50% 42%; 
+	background: url( <?php echo plugins_url('/monthly-timeline/img/month-view.png'); ?> ) no-repeat 50% 42%;
 	/* On bottom, like z-index: 1; */
-}	
+}
 #datesline{
 	clear: both;
 	position: relative;
 	overflow: hidden;
 	margin-bottom: 100px;
 	height: 90px;
-	
+
 }
 .date{
 	width: 80px;
@@ -419,21 +419,21 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	text-transform: uppercase;
 	margin: 20% 0 0;
 	float: left;
-	line-height: 1;	
+	line-height: 1;
 }
 .date-year{
 	margin: 0;
-	line-height: 1;	
+	line-height: 1;
 	font-weight: 100;
 }
 
 /* Portrait tablet to landscape and desktop */
-@media (min-width: 768px) and (max-width: 979px) { 
-	
+@media (min-width: 768px) and (max-width: 979px) {
+
 	.slide {
 		width: 610px;
 	}
-	
+
 	.action-container {
 	    left: 50%;
 	    margin-left: -384px;
@@ -442,7 +442,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	    width: 768px;
 	    background: blue;
 	}
-	
+
 	.slide-wrap {
     	margin: 0 55px;
 	}
@@ -450,7 +450,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
     	left: 0;
     	margin-left: 5px;
 	}
-	
+
 	#storyline-wrap .story {
 	    background: none repeat scroll 0 0 #FFFFFF;
 	    border-radius: 5px 5px 5px 5px;
@@ -475,14 +475,14 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	    overflow: hidden;
 	    width: 590px;
 	}
-	
-	
+
+
 }
 
 
  /* Landscape phone to portrait tablet */
-@media (max-width: 767px) { 
-	
+@media (max-width: 767px) {
+
 	.slide {
 		width: 100%;
 		float: none;
@@ -492,7 +492,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
 	#storyline-wrap h2{
 		color: #FFF;
 		margin-left: 15px;
-	} 
+	}
 	#storyline-wrap .story{
 		width: 45%;
 		float: left;
@@ -516,7 +516,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
    	 	-webkit-border-radius: 0;
 		-moz-border-radius: 0;
 		border-radius: 0;
-		
+
 	}
 	#storyline-wrap .story h2{
 		clear: both;
@@ -529,7 +529,7 @@ function monthly_timeline_shortcode_handler( $atts ) {
     	z-index: 10;
     	position: relative;
     	width: 100%;
-    	
+
 	}
 	.datesline-shell{
 		display: none;
@@ -544,41 +544,41 @@ function monthly_timeline_shortcode_handler( $atts ) {
   <?php
   $output_string = ob_get_contents();
   ob_end_clean();
-  
+
   return $output_string;
-	
+
 }
 
 /**
  * monthly_timeline_filter function.
- * 
+ *
  * @access public
  * @param mixed $taxonomy
  * @return void
  */
-function monthly_timeline_filter( $taxonomy ) { 
-	
+function monthly_timeline_filter( $taxonomy ) {
+
 	$taxonomies = array(  $taxonomy );
 
 	$args = array(
-	    'orderby'       => 'name', 
+	    'orderby'       => 'name',
 	    'order'         => 'ASC',
-	    'hide_empty'    => true, 
-	    'fields'        => 'all', 
-	    'hierarchical'  => false, 
+	    'hide_empty'    => true,
+	    'fields'        => 'all',
+	    'hierarchical'  => false,
 	);
 	$terms = get_terms( $taxonomies, $args );
-	
+
 	foreach( $terms as $term ):
-		
+
 		?><li><a href="#<?php echo $taxonomy.'-'.$term->slug; ?>" data-commitment="<?php echo esc_attr( $term->slug);?>" ><?php echo $term->name; ?></a></li><?php
-		
+
 	endforeach;
 }
 
 /**
  * monthly_timeline_get_terms function.
- * 
+ *
  * @access public
  * @param mixed $post_id
  * @param mixed $taxonomy
@@ -589,15 +589,18 @@ function monthly_timeline_get_terms($post_id, $taxonomy ){
 		return array();
 	}
 	$taxonomy_terms = get_the_terms( $post_id, $taxonomy );
-	
+
 	$terms = array();
-	
+
 	if( $taxonomy_terms ) {
 		foreach( $taxonomy_terms as $term ) {
+			if ( ! is_object( $term ) ) {
+				continue;
+			}
 			$terms[] = $term->slug;
 		}
 	}
-	
+
 	return $terms;
 
 }
